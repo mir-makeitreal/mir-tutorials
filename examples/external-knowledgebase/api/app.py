@@ -10,13 +10,11 @@ swagger = Swagger(app)  # http://host/apidocs/
 # Authorization 키 (환경변수로 관리)
 API_KEY = os.getenv("API_KEY", "")
 
-def search_mock(query: str):
+def search_mock(knowledge_id: str, query: str):
     """ 예를 들어 검색 엔진의 실행 결과응답이 다음과 같을 수 있음 """
     search_result = [
         {
             "metadata": {
-                "dataset_id": "dataset-0000",
-                "dataset_name": "Classic Literature",
                 "document_name": "The Little Prince.pdf",
                 "document_url": "https://example.com/books/little-prince",
                 "document_summary": "A poetic tale about a pilot stranded in the desert who meets a young prince visiting Earth from a tiny asteroid.",
@@ -28,8 +26,6 @@ def search_mock(query: str):
         },
         {
             "metadata": {
-                "dataset_id": "dataset-0000",
-                "dataset_name": "Classic Literature",
                 "document_name": "Alice in Wonderland.pdf",
                 "document_url": "https://example.com/books/alice",
                 "document_summary": "A whimsical story about a young girl who falls down a rabbit hole into a fantasy world.",
@@ -43,10 +39,12 @@ def search_mock(query: str):
 
     return search_result
 
-def search(query: str, top_k: int, score_threshold: float):
+def search(knowledge_id: str, query: str, top_k: int):
     """ real implementation """
     
     # TODO: To be implemented
+    # if not knowledge:
+    #     return jsonify({"error_code": 2001, "error_msg": "The knowledge does not exist"}), 404
     
     search_result = []
     return search_result
@@ -66,48 +64,29 @@ def retrieval():
     score_threshold = retrieval_setting.get("score_threshold")
 
 
-    search_result = search_mock(query)
-    # search_result = search(query) # TODO: Use this for real implementation
+    search_result = search_mock(knowledge_id, query)
+    # search_result = search(knowledge_id, query, top_k) # TODO: Use this for real implementation
 
     ## 검색 엔진 실행 결과를 response 형식으로 변환
-    knowledge_base = {}
+    output_results = []
     for s in search_result:
-        kid = s['metadata']['dataset_id']
-        if kid not in knowledge_base:
-            knowledge_base[kid] = {
-                "knowledge_id": kid,
-                "documents": []
-            }
-
         record = {
             "score": s.get('score'),
-            # "title": f"{s.get('title')}, page.{s['metadata']['page']}", 
             "title": f"{s.get('title')}", 
             "content": s.get('content')
         }
-        m = s.get('metadata')
-        if m:
+        metadata = s.get('metadata')
+        if metadata:
             record["metadata"] = {
-                "dataset_id": m.get('dataset_id'),
-                "dataset_name": m.get('dataset_name'),
-                "document_name": m.get('document_name'), 
-                "document_url": m.get('document_url'),
-                "document_summary": m.get('document_summary'),
-                "page": m.get('page'),
+                "document_name": metadata.get('document_name'), 
+                "document_url": metadata.get('document_url'),
+                "document_summary": metadata.get('document_summary'),
+                "page": metadata.get('page'),
             }
-        knowledge_base[kid]["documents"].append(record)
-
-    knowledge_base = list(knowledge_base.values())
-    # print(f"knowledge_id: {knowledge_id}")
-    # print(knowledge_base)
-
-    knowledge = next((kb for kb in knowledge_base if kb["knowledge_id"] == knowledge_id), None)
-    
-    if not knowledge:
-        return jsonify({"error_code": 2001, "error_msg": "The knowledge does not exist"}), 404
+        output_results.append(record)
 
     filtered_records = [
-        record for record in knowledge["documents"]
+        record for record in output_results
         if record["score"] >= score_threshold
     ]
     sorted_records = sorted(filtered_records, key=lambda x: x["score"], reverse=True)[:top_k]

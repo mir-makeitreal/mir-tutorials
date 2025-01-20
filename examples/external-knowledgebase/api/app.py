@@ -43,7 +43,7 @@ def search_mock(query: str):
 
     return search_result
 
-def search(query: str):
+def search(query: str, top_k: int, score_threshold: float):
     """ real implementation """
     
     # TODO: To be implemented
@@ -69,7 +69,7 @@ def retrieval():
     search_result = search_mock(query)
     # search_result = search(query) # TODO: Use this for real implementation
 
-    ## 검색 엔진 실행 결과를 지식 데이터베이스 형식으로 변환
+    ## 검색 엔진 실행 결과를 response 형식으로 변환
     knowledge_base = {}
     for s in search_result:
         kid = s['metadata']['dataset_id']

@@ -1,3 +1,5 @@
+""" 간단한 채팅 """
+
 import streamlit as st
 import requests
 import json
